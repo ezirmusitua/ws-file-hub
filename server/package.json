@@ -1,0 +1,19 @@
+{
+  "name": "ws-file-hub-server",
+  "version": "0.1.0",
+  "main": "src/index.js",
+  "author": "jferroal@gmail.com",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "greenlock-express": "^2.6.7",
+    "koa": "^2.7.0",
+    "koa-route": "^3.2.0",
+    "koa-websocket": "^5.0.1",
+    "nodemon": "^1.18.10",
+    "wscat": "^2.2.1"
+  }
+}
