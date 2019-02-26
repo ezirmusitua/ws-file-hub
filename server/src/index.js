@@ -1,31 +1,42 @@
-const Koa = require('koa');
-const route = require('koa-route');
-const greenlock = require('greenlock-express');
-const websockify = require('koa-websocket');
+const {applyMiddlewares} = require('./middlewares');
+const {connectDatabase} = require('./database');
+const {createApp} = require('./app');
 
-const wsOptions = {};
-// const le = greenlock.create({
-// all your sweet Let's Encrypt options here
-// });
-// const app = websockify(new Koa(), wsOptions, le);
-const app = websockify(new Koa(), wsOptions);
-// Regular middleware
-// Note it's app.ws.use and not app.use
-app.ws.use(function (ctx, next) {
-  // return `next` to pass the context (ctx) on to the next ws middleware
-  return next(ctx);
-});
+const Router = require('koa-router');
 
-// Using routes
-app.ws.use(route.all('/test/:id', function (ctx) {
-  // `ctx` is the regular koa context created from the `ws` onConnection `socket.upgradeReq` object.
-  // the websocket is added to the context on `ctx.websocket`.
-  ctx.websocket.send('Hello World');
-  ctx.websocket.on('message', function (message) {
-    // do something with the message from client
-    console.log(message);
-    ctx.websocket.send(message);
+async function startServer() {
+  const app = createApp();
+  const router = new Router();
+  const wsRouter = new Router();
+  wsRouter.all('/debug/:id', (ctx) => {
+    // `ctx` is the regular koa context created from the `ws` onConnection `socket.upgradeReq` object.
+    // the websocket is added to the context on `ctx.websocket`.
+    ctx.websocket.send('Welcome to WS File Hub');
+    ctx.websocket.on('message', function (message) {
+      // do something with the message from client
+      ctx.websocket.send(`You say: ${message}`);
+    });
   });
-}));
+  router.get('/debug/:id/', async (ctx, next) => {
+    console.log('ctx request url: ', ctx.request.url);
+    console.log('ctx request body: ', await ctx.request.body());
+    console.log('ctx request params: ', ctx.params);
+    console.log('ctx request query: ', ctx.request.query);
+    ctx.body = 'Hello World';
+    next();
+  });
+  try {
+    applyMiddlewares(app);
+    await connectDatabase();
+    // Using routes
+    app.use(router.routes());
+    app.use(router.allowedMethods());
+    app.ws.use(wsRouter.routes());
+    app.ws.use(wsRouter.allowedMethods());
+    app.run({});
+  } catch (err) {
 
-app.listen(3000);
+  }
+}
+
+startServer();
